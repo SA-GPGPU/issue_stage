@@ -28,7 +28,7 @@ typedef struct VX_gpr_rsp_if
 typedef struct VX_writeback_if
 {
     uint64_t       uuid:UUID_BITS;
-    bool       `   tmask[NUM_THREADS];
+    bool           tmask[NUM_THREADS];
     unsigned       wid:NW_BITS;
     unsigned       PC:31;
     unsigned       rd:NR_BITS;
