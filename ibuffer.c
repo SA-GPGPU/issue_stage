@@ -139,8 +139,6 @@
 	//and the buffer is valid (ibuffer_if_valid) when added_warps > 1 or when there is enqueued instruction we need to dequeue recently
     enq_fire = decode_if.valid && (unsigned)ready_decode;		// enqueue
     deq_fire = ibuffer_if->valid&& (unsigned)ready_ibuffer;	// dequeue
-    printf("enq_fire= %d\n",enq_fire);
-    printf("deq_fire= %d\n",deq_fire);
 
     for ( int i = 0; i <NUM_WARPS; i++)
     {
@@ -148,8 +146,6 @@
 		//write and read signals
 	    writing[i] = enq_fire && (i == decode_if.wid);
         reading[i] = deq_fire && (i == ibuffer_if->wid);
-        printf("writing= %d\n",writing[i]);
-        printf("reading= %d\n",reading[i]);
 
 		//We need to sure that the buffer is not full to write in it
 		//We need to know that the buffer is empty or not because if it is empty
@@ -174,12 +170,10 @@
 		//we need to know wether the added warp is empty or will be empty to pass the input to output directly
         if (empty_r[i] || (alm_empty_r[i] && reading[i]) ) going_empty[i] = 1;
         else going_empty[i] = 0;
-        printf("going_empty= %d\n",going_empty[i]);
 
 
         //skid_buffer
 		 push[i] = writing[i] && !going_empty[i] && ready_in[i];
-		         printf("push= %d\n",push[i]);
         if (!valid_out[i] || reading[i] ) pop[i] = 1;
         else pop[i] = 0;
 		if (reading[i]) ready_in[i] = 1;
@@ -273,7 +267,7 @@
      ibuffer_if->valid = deq_valid;
      ibuffer_if->wid   = deq_wid;
      ibuffer_if->uuid = getBits (deq_instr , UUID_BITS-1,0) ;
-     ibuffer_if->tmask = getBits (deq_instr , UUID_BITS+NUM_THREADS-1,UUID_BITS) ;
+    // ibuffer_if->tmask = getBits (deq_instr , UUID_BITS+NUM_THREADS-1,UUID_BITS) ;
      ibuffer_if->PC = getBits (deq_instr , UUID_BITS+NUM_THREADS+32-1,
                                            UUID_BITS+NUM_THREADS) ;
 
