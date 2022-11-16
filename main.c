@@ -4,32 +4,60 @@
 #include "define.h"
 #include "config.h"
 #include "common.h"
-#include "issue.h"
+#include "issue_stage.h"
+
 
 int main()
 {
-    VX_decode_if decode_if;
-    VX_ibuffer_if ibuffer_if;
-    VX_writeback_if writeback_if;
-    VX_gpr_req_if gpr_req_if;
-    VX_gpr_rsp_if gpr_rsp_if;
-    VX_alu_req_if alu_req_if;
-    VX_lsu_req_if lsu_req_if;
-    VX_gpu_req_if gpu_req_if;
-    VX_fpu_req_if fpu_req_if;
-    VX_csr_req_if csr_req_if;
-    bool ready_ibuffer, ready_decode;
-    bool ready_gpu,ready_fpu,ready_csr,ready_lsu,ready_alu;
-    bool initial_flag;
-    ibuffer ( decode_if, ready_ibuffer, &ibuffer_if,  &ready_decode,initial_flag);
-    scoreboard ( ibuffer_if,  writeback_if, &ready_ibuffer,initial_flag);
-    gpr_stage ( writeback_if,  gpr_req_if,  &gpr_rsp_if  ) ;
-    dispatch  ( ibuffer_if,& ready_ibuffer,  gpr_rsp_if,
-			    &alu_req_if, ready_gpu,
-                &fpu_req_if, ready_fpu,
-                &csr_req_if, ready_csr,
-                &lsu_req_if, ready_lsu,
-                &gpu_req_if, ready_alu);
+    //declaration
+    VX_decode decode;
+    VX_writeback writeback;
+    VX_alu_req alu_req;
+    VX_lsu_req lsu_req;
+    VX_csr_req csr_req;
+    VX_fpu_req fpu_req;
+    VX_gpu_req gpu_req;
+	bool wren[NUM_THREADS];
+
+    //initialization
+    decode.uuid    =1 ;
+    decode.tmask   =7 ;
+    decode.wid     =1 ;
+    decode.PC      =0 ;
+    decode.ex_type =1 ; //1 for alu //2 for lsu //3 for csr //4 for fpu //5 for gpu
+    decode.op_type =3 ;
+    decode.op_mod  =4 ;
+    decode.imm 	  =4 ;
+    decode.rd 	  =1 ;
+    decode.rs1 	  =1 ;
+    decode.rs2 	  =1 ;
+    decode.rs3 	  =1 ;
+    decode.wb 	  =1 ;
+    decode.use_PC  =1 ;
+    decode.use_imm =1 ;
+    writeback.uuid=1  ;
+    writeback.wid=1   ; //equal to decode.wid to read from the same address that we write on
+    writeback.rd=1    ; //equal to decode.rd to read from the same address that we write on
+    writeback.tmask=15; // 0b1111 to write in all threads
+    writeback.PC=1    ;
+    writeback.eop=1   ;
+    for ( int i = 0; i <NUM_THREADS; i++)
+    {
+        wren[i] =  (getBit (writeback.tmask , i)==1);
+        if (wren[i])
+        {
+            writeback.data[i]=21;
+        }
+    }
+
+    //calling function
+    issue_stage( decode,  writeback,
+                 &alu_req,  &lsu_req,
+                 &csr_req,  &fpu_req, &gpu_req);
+
+
+
+
 
     return 0;
 }
