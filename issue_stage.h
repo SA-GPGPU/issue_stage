@@ -3,6 +3,7 @@
 #include "define.h"
 #include "config.h"
 #include "common.h"
+#include "decoder.h"
 
 #define DATAW   UUID_BITS + NUM_THREADS + 32 + EX_BITS + INST_OP_BITS + INST_FRM_BITS + 1 + (NR_BITS * 4) + 32 + 1 + 1
 #define ADDRW    int_log2(IBUF_SIZE+1)		 // round up log2
@@ -14,25 +15,6 @@
 #define DATAW_fpu   UUID_BITS + NW_BITS + NUM_THREADS + 32 + INST_FPU_BITS + INST_MOD_BITS + NR_BITS + 1 + (3 * NUM_THREADS * 32)
 #define DATAW_gpu   UUID_BITS + NW_BITS + NUM_THREADS + 32 + 32 + INST_GPU_BITS + INST_MOD_BITS + NR_BITS + 1 + NT_BITS  + (3 * NUM_THREADS * 32)
 
-typedef struct VX_decode
-{
-    uint64_t       uuid:UUID_BITS;
-    unsigned       tmask:NUM_THREADS;
-    unsigned       wid:NW_BITS;
-    unsigned       PC:31;
-    unsigned       ex_type:EX_BITS;
-    unsigned       op_type:INST_OP_BITS;
-    unsigned       op_mod:INST_MOD_BITS;
-    signed         imm:32;
-    unsigned       rd:NR_BITS;
-    unsigned       rs1:NR_BITS;
-    unsigned       rs2:NR_BITS;
-    unsigned       rs3:NR_BITS;
-    unsigned       wb:1;
-    unsigned       use_PC:1;
-    unsigned       use_imm:1;
-
-} VX_decode;
 
 typedef struct VX_writeback
 {
