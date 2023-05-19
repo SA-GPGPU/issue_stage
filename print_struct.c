@@ -12,7 +12,7 @@ void printf_decode(VX_decode decode)
     printf("decode.uuid=%"PRIu64"\n",decode.uuid);
     printf("decode.wid=%d\n",decode.wid);
     printf("decode.tmask=%d\n",decode.tmask);
-    printf("decode.PC=%d\n",decode.PC);
+    printf("decode.PC=%x\n",decode.PC);
     printf("decode.ex_type=%d\n",decode.ex_type);
     printf("decode.op_type=%d\n",decode.op_type);
     printf("decode.op_mod=%d\n",decode.op_mod);

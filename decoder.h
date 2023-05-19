@@ -53,25 +53,6 @@ typedef struct perf_decode_if
 
 } perf_decode_if;
 
-typedef struct VX_decode
-{
-    uint64_t       uuid:UUID_BITS;
-    unsigned       tmask:NUM_THREADS;
-    unsigned       wid:NW_BITS;
-    unsigned       PC:31;
-    unsigned       ex_type:EX_BITS;
-    unsigned       op_type:INST_OP_BITS;
-    unsigned       op_mod:INST_MOD_BITS;
-    signed         imm:32;
-    unsigned       rd:NR_BITS;
-    unsigned       rs1:NR_BITS;
-    unsigned       rs2:NR_BITS;
-    unsigned       rs3:NR_BITS;
-    unsigned       wb:1;
-    unsigned       use_PC:1;
-    unsigned       use_imm:1;
-
-} VX_decode;
 
 typedef struct wstall_if
 {

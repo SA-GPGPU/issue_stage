@@ -42,6 +42,8 @@ unsigned waddr, raddr1, raddr2,raddr3;
 		(gpr_rsp->rs1_data[i])=ram_rs1[i][raddr1];
 
 	}
+	//printf("raddr1=%x\n",raddr1);
+	//printf("ram_rs1[0][f]=%x\n",ram_rs1[0][14]);
     for (int i = 0; i <NUM_THREADS; i++) {
 		if(wren[i])
 		{

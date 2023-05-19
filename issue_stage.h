@@ -1,13 +1,10 @@
 #include <stdio.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include "define.h"
 #include "config.h"
 #include "common.h"
-#include "decoder.h"
 
-#define DATAW   UUID_BITS + NUM_THREADS + 32 + EX_BITS + INST_OP_BITS + INST_FRM_BITS + 1 + (NR_BITS * 4) + 32 + 1 + 1
-#define ADDRW    int_log2(IBUF_SIZE+1)		 // round up log2
-#define NWARPSW  int_log2(NUM_WARPS+1)
 
 #define DATAW_alu   UUID_BITS + NW_BITS + NUM_THREADS + 32 + 32 + INST_ALU_BITS + INST_MOD_BITS + 32 + 1 + 1 + NR_BITS + 1 + NT_BITS + (2 * NUM_THREADS * 32)
 #define DATAW_lsu   UUID_BITS + NW_BITS + NUM_THREADS + 32 + INST_LSU_BITS + 1 + 32 + NR_BITS + 1 + (2 * NUM_THREADS * 32) + 1
@@ -15,6 +12,25 @@
 #define DATAW_fpu   UUID_BITS + NW_BITS + NUM_THREADS + 32 + INST_FPU_BITS + INST_MOD_BITS + NR_BITS + 1 + (3 * NUM_THREADS * 32)
 #define DATAW_gpu   UUID_BITS + NW_BITS + NUM_THREADS + 32 + 32 + INST_GPU_BITS + INST_MOD_BITS + NR_BITS + 1 + NT_BITS  + (3 * NUM_THREADS * 32)
 
+typedef struct VX_decode
+{
+    uint64_t       uuid:UUID_BITS;
+    unsigned       tmask:NUM_THREADS;
+    unsigned       wid:NW_BITS;
+    unsigned       PC:32;
+    unsigned       ex_type:EX_BITS;
+    unsigned       op_type:INST_OP_BITS;
+    unsigned       op_mod:INST_MOD_BITS;
+    unsigned         imm:32;
+    unsigned       rd:NR_BITS;
+    unsigned       rs1:NR_BITS;
+    unsigned       rs2:NR_BITS;
+    unsigned       rs3:NR_BITS;
+    unsigned       wb:1;
+    unsigned       use_PC:1;
+    unsigned       use_imm:1;
+
+} VX_decode;
 
 typedef struct VX_writeback
 {
@@ -57,13 +73,13 @@ typedef struct VX_alu_req
     unsigned		op_mod:INST_MOD_BITS;
     bool            use_PC;
     bool            use_imm;
-    signed	    	imm:32;
+    unsigned	    	imm:32;
     unsigned    	tid:NT_BITS;
     unsigned       	rs1_data[NUM_THREADS];
     unsigned       	rs2_data[NUM_THREADS];
     unsigned     	rd:NR_BITS;
     bool            wb;
-
+    bool            valid;
 
 } VX_alu_req;
 
@@ -81,7 +97,7 @@ typedef struct VX_lsu_req
     unsigned       	base_addr[NUM_THREADS];
     unsigned     	rd:NR_BITS;
     bool            wb;
-
+    bool            valid;
 
 } VX_lsu_req;
 
@@ -94,11 +110,11 @@ typedef struct VX_csr_req
     unsigned 		op_type:INST_CSR_BITS;
     unsigned		addr:CSR_ADDR_BITS;
     bool            use_imm;
-    signed		    imm:32;
+    unsigned		imm:32;
     unsigned       	rs1_data;
     unsigned     	rd:NR_BITS;
     bool            wb;
-
+    bool            valid;
 
 } VX_csr_req;
 
@@ -116,7 +132,7 @@ typedef struct VX_fpu_req
     unsigned       	rs3_data[NUM_THREADS];
     unsigned     	rd:NR_BITS;
     bool            wb;
-
+    bool            valid;
 
 } VX_fpu_req;
 
@@ -135,7 +151,7 @@ typedef struct VX_gpu_req
     unsigned       	rs3_data[NUM_THREADS];
     unsigned     	rd:NR_BITS;
     bool            wb;
-
+    bool            valid;
 
 } VX_gpu_req;
 
@@ -143,12 +159,12 @@ typedef struct VX_gpu_req
 
 void issue_stage(VX_decode decode, VX_writeback writeback,
 				 VX_alu_req *alu_req, VX_lsu_req *lsu_req,
-				 VX_csr_req *csr_req, VX_fpu_req *fpu_req, VX_gpu_req *gpu_req);
+				 VX_csr_req *csr_req, VX_fpu_req *fpu_req, VX_gpu_req *gpu_req,bool wb);
 
 void ibuffer_stage (VX_decode decode,VX_decode *ibuffer,bool write_ibuffer,bool read_ibuffer) ;
-void gpr_stage (VX_writeback VX_writeback, VX_gpr_req gpr_req, VX_gpr_rsp *gpr_rsp  ) ;
+void GPRs (VX_writeback VX_writeback, VX_gpr_req gpr_req, VX_gpr_rsp *gpr_rsp  ) ;
 void scoreboard (VX_decode ibuffer, VX_writeback writeback, bool *read_ibuffer  ) ;
- void dispatch  (VX_decode ibuffer,  bool* read_ibuffer, VX_gpr_rsp gpr_rsp,
+ void dispatch  (VX_decode ibuffer, VX_gpr_rsp gpr_rsp,
 				 VX_alu_req *alu_req, VX_lsu_req *lsu_req, VX_csr_req *csr_req,
 				 VX_fpu_req *fpu_req, VX_gpu_req *gpu_req);
 //assign_struct

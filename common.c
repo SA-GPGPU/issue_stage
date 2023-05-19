@@ -18,3 +18,4 @@ uint32_t concatenate (uint32_t value1 , unsigned int width1,uint32_t value2 , un
 	assert((width1+width2) <=32);
 	return (value1<<width2) | value2 ;
 }
+

@@ -19,3 +19,5 @@ uint32_t getBit (uint32_t value , unsigned int b) ;
 uint32_t getBits (uint32_t value , unsigned int hi,unsigned int lo) ;
 
 uint32_t concatenate (uint32_t value1 , unsigned int width1,uint32_t value2 , unsigned int width2) ;
+
+

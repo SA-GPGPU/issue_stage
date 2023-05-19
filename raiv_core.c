@@ -1,21 +1,18 @@
-
 #include <stdio.h>
 #include <stdint.h>
-#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "define.h"
 #include "config.h"
 #include "common.h"
-//#include "decoder.h"
 #include "issue_stage.h"
 
+
 int main()
-{   int CLK_NUM=43;
-    instr_fetch_rsp fetched_instruction;
-    perf_decode_if decoder_performance;
+{
     VX_decode decoded_signals;
-    wstall_if stalled_warps ;
-    join_if join_inst;
+    VX_decode ibuffer;
     VX_writeback writeback;
     VX_alu_req alu_req;
     VX_lsu_req lsu_req;
@@ -23,90 +20,114 @@ int main()
     VX_fpu_req fpu_req;
     VX_gpu_req gpu_req;
 
+    FILE *fptr ; // file pointer
+    char input_line [400] ;
+    fptr=fopen("./issue_input.txt","r");
+    if (fptr==NULL)
+	{
+    	printf("Error opening input file \n") ;
+    	exit(1) ;
+    }
 
-	bool wren[NUM_THREADS];
+    while (fgets (input_line,400,fptr) != NULL)
+	{ // getting a line from file
+    	char *value [30] ;
+    	printf("%s \n",input_line);
 
-    //initialization
-    writeback.uuid=1  ;
-    writeback.wid=0   ; //equal to decode.wid to read from the same address that we write on
-    writeback.rd=1    ; //equal to decode.rd to read from the same address that we write on
-    writeback.tmask=15; // 0b1111 to write in all threads
-    writeback.PC=1    ;
-    writeback.eop=1   ;
-    for ( int i = 0; i <NUM_THREADS; i++)
-    {
-        wren[i] =  (getBit (writeback.tmask , i)==1);
-        if (wren[i])
+        char *token4=strtok(input_line,"{");
+        token4=strtok(NULL,"}");
+    	if (token4 != NULL)
+		{
+            token4=strtok(token4,",");
+            writeback.data[3]=(int) strtoull(token4,NULL,16);
+    		for (int i=0;i<NUM_THREADS-1;i++)
+			{
+    		token4=strtok(NULL,",");
+            writeback.data[2-i]=(int) strtoull(token4,NULL,16);
+			}
+    	}
+
+    	char *token=strtok(input_line,"=");
+
+
+    	int i=0 ;
+    	while (token != NULL)
+		{
+    		value[i]=strtok(NULL,",");
+    		token=strtok(NULL,"=");
+    		i++;
+    	}
+
+    	char *token3=strtok(input_line,"(");
+    	token3=strtok(NULL,")");
+
+
+    	if(strcmp(token3, "Decode IF ONLY") == 0)
         {
-            writeback.data[i]=21;
+			decoded_signals.uuid = (long int) strtoull (value[0],NULL,16) ;
+			decoded_signals.wid = (int) strtoul(value[1],NULL,16) ;
+			decoded_signals.tmask = (int) strtoul(value[2],NULL,16) ;
+			decoded_signals.PC = (unsigned) strtoul (value[3],NULL,16) ;
+			decoded_signals.ex_type = (int) strtoul(value[4],NULL,16) ;
+			decoded_signals.op_type = (int) strtoul(value[5],NULL,16) ;
+			decoded_signals.op_mod = (int) strtoul(value[6],NULL,16) ;
+			decoded_signals.wb = (int) strtoul(value[7],NULL,16) ;
+			decoded_signals.rd = (int) strtoul(value[8],NULL,16) ;
+			decoded_signals.rs1 = (int) strtoul(value[9],NULL,16) ;
+			decoded_signals.rs2 = (int) strtoul(value[10],NULL,16) ;
+			decoded_signals.rs3 = (int) strtoul(value[11],NULL,16) ;
+			decoded_signals.imm = (int) strtoul(value[12],NULL,16) ;
+			decoded_signals.use_PC = (int) strtoul(value[13],NULL,16) ;
+			decoded_signals.use_imm = (int) strtoul(value[14],NULL,16) ;
+			writeback.eop=0;
+			issue_stage( decoded_signals,  writeback,
+						&alu_req,  &lsu_req,
+						&csr_req,  &fpu_req, &gpu_req,0);
+        }
+
+    	if(strcmp(token3, "Write back ONLY") == 0)
+        {
+			writeback.uuid=(long int) strtoull(value[0],NULL,16)  ;
+			writeback.wid=(int) strtoul(value[1],NULL,16)   ; //equal to decode.wid to read from the same address that we write on
+			writeback.tmask=(int) strtoul(value[2],NULL,16); // 0b1111 to write in all threads
+			writeback.PC=(int) strtoul(value[3],NULL,16);
+			writeback.rd=(int) strtoul(value[4],NULL,16); //equal to decode.rd to read from the same address that we write on
+			writeback.eop=(int) strtoul(value[5],NULL,16);
+			issue_stage( decoded_signals,  writeback,
+						&alu_req,  &lsu_req,
+						&csr_req,  &fpu_req, &gpu_req,1);
+        }
+
+         if(strcmp(token3, "Decode and WB") == 0)
+        {
+
+			decoded_signals.uuid = (long int) strtoull (value[0],NULL,16) ;
+			decoded_signals.wid = (int) strtoul(value[1],NULL,16) ;
+			decoded_signals.tmask = (int) strtoul(value[2],NULL,16) ;
+			decoded_signals.PC = (unsigned) strtoul (value[3],NULL,16) ;
+			decoded_signals.ex_type = (int) strtoul(value[4],NULL,16) ;
+			decoded_signals.op_type = (int) strtoul(value[5],NULL,16) ;
+			decoded_signals.op_mod = (int) strtoul(value[6],NULL,16) ;
+			decoded_signals.wb = (int) strtoul(value[7],NULL,16) ;
+			decoded_signals.rd = (int) strtoul(value[8],NULL,16) ;
+			decoded_signals.rs1 = (int) strtoul(value[9],NULL,16) ;
+			decoded_signals.rs2 = (int) strtoul(value[10],NULL,16) ;
+			decoded_signals.rs3 = (int) strtoul(value[11],NULL,16) ;
+			decoded_signals.imm = (int) strtoul(value[12],NULL,16) ;
+			decoded_signals.use_PC = (int) strtoul(value[13],NULL,16) ;
+			decoded_signals.use_imm = (int) strtoul(value[14],NULL,16) ;
+			writeback.uuid=(long int) strtoull(value[15],NULL,16)  ;
+			writeback.wid=(int) strtoul(value[16],NULL,16)   ;
+			writeback.tmask=(int) strtoul(value[17],NULL,16);
+			writeback.PC=(int) strtoul(value[18],NULL,16);
+			writeback.rd=(int) strtoul(value[19],NULL,16);
+			writeback.eop=(int) strtoul(value[20],NULL,16);
+			issue_stage( decoded_signals,  writeback,
+						&alu_req,  &lsu_req,
+						&csr_req,  &fpu_req, &gpu_req,0);
         }
     }
-
-	uint32_t test_inst [55] = {
-0x0000a0b7,
-0x00014097,
-0x01e08093,
-0x01e0a093,
-0x01e0b093,
-0x01e0c093,
-0x01e0e093,
-0x01e0f093,
-0x01e09093,
-0x01e0d093,
-0x41e0d093,
-0x001080b3,
-0x401080b3,
-0x001090b3,
-0x0010a0b3,
-0x0010b0b3,
-0x0010c0b3,
-0x0010d0b3,
-0x4010d0b3,
-0x0010e0b3,
-0x0010f0b3,
-0x00408083,
-0x00409083,
-0x0040a083,
-0x0040c083,
-0x0040d083,
-0x00108223,
-0x00109223,
-0x0010a223,
-0x000000ef,
-0x064080e7,
-0x00109463,
-0x0000006f,
-0x00108463,
-0x0000006f,
-0x0010d463,
-0x0000006f,
-0x0010c463,
-0x0000006f,
-0x0010f463,
-0x0000006f,
-0x0010e463,
-0x0000006f
-/*
-0x021080b3,
-0x021090b3,
-0x0210a0b3,
-0x0210b0b3,
-0x0210c0b3,
-0x0210d0b3,
-0x0210e0b3,
-0x0210f0b3
-*/
-	} ;
-
-
-    for (int i=0;i<CLK_NUM;i++) {
-    	fetched_instruction.instr = test_inst[i] ;
-    	decode (fetched_instruction,&decoder_performance,&decoded_signals,&stalled_warps,&join_inst);
-        issue_stage( decoded_signals,  writeback,
-                    &alu_req,  &lsu_req,
-                    &csr_req,  &fpu_req, &gpu_req);
-
-    }
-
+    fclose(fptr);
 	return 0;
 }
+
